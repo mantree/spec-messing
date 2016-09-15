@@ -8,21 +8,12 @@
 
 (def spec-store (atom {}))
 
-(defn tag [name]
-  (str "kixi.some.sensible.name" name))
-
-(def write-handlers
-  {:handlers {Pattern (transit/write-handler (tag "Pattern") str)}})
-
-(def read-handlers
-  {:handlers {(tag "Pattern") (transit/read-handler #(Pattern/compile %))}})
-
 (defn persist-spec
   [kw s]
   (swap! spec-store
          (fn [store]
            (let [out (ByteArrayOutputStream. 4096)
-                 wr (transit/writer out :json write-handlers)
+                 wr (transit/writer out :json)
                  _ (transit/write wr s)]
              (update store
                      kw
@@ -32,7 +23,7 @@
   (let [^String raw (get @spec-store kw)
         in (ByteArrayInputStream. (.getBytes raw))
         raw (transit/read
-             (transit/reader in :json read-handlers))
+             (transit/reader in :json))
         evald (eval raw)]
     (if (map? evald)
       (spec/cat-impl (keys evald)
